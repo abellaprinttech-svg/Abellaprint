@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abella Print Tech | Visualizador y Cotizador 3D</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Three.js (Librería base) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    /* ========================================================
+       Estilos de la Pantalla Completa del Visor y Cotizador 3D
+       ======================================================== */
+    body.viewer-layout-body {
+      background-color: #ffffff;
+      color: #181d24;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Barra Superior */
+    .viewer-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 2rem;
+      border-bottom: 1px solid #e2e8f0;
+      background-color: #ffffff;
+      z-index: 10;
+    }
+
+    .nav-left-group {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .brand-mini-link {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .brand-mini-logo {
+      height: 36px;
+      width: auto;
+      border-radius: 4px;
+    }
+
+    .back-home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #475569;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    .back-home-btn:hover {
+      color: var(--accent-color);
+      border-color: var(--accent-color);
+      background-color: #fafaf9;
+    }
+
+    .nav-right-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .file-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 0.4rem 0.95rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.825rem;
+      font-weight: 500;
+      color: #334155;
+    }
+
+    .status-dot-active {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    .change-file-btn {
+      background: none;
+      border: 1px dashed #cbd5e1;
+      color: #475569;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .change-file-btn:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background-color: #fafaf9;
+    }
+
+    .file-input-inline-hidden {
+      display: none;
+    }
+
+    /* Disposición Dividida */
+    .viewer-split-layout {
+      display: flex;
+      flex: 1;
+      min-height: calc(100vh - 65px);
+      width: 100%;
+    }
+
+    /* LADO IZQUIERDO: Visualizador 3D */
+    .viewer-left-col {
+      flex: 1.35;
+      background: radial-gradient(circle at center, #ffffff 0%, #f1f4f8 100%);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #e2e8f0;
+      min-height: 520px;
+    }
+
+    #threeCanvasContainer {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      flex: 1;
+      position: relative;
+      outline: none;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #threeCanvasContainer:active {
+      cursor: grabbing;
+    }
+
+    #threeCanvasContainer canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Superposiciones sobre el visor 3D */
+    .viewer-overlay-top {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      right: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .viewer-overlay-top > * {
+      pointer-events: auto;
+    }
+
+    .dimensions-badge {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.8rem;
+      color: #334155;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .dimensions-title {
+      font-weight: 700;
+      color: #0f172a;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+    }
+
+    .dimensions-values {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--accent-color);
+      font-weight: 700;
+    }
+
+    .viewer-controls-bar {
+      display: flex;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-pill);
+      padding: 0.25rem 0.4rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .ctrl-tool-btn {
+      background: none;
+      border: none;
+      color: #475569;
+      padding: 0.45rem;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .ctrl-tool-btn:hover {
+      background-color: #f1f5f9;
+      color: var(--accent-color);
+    }
+
+    .ctrl-tool-btn.active {
+      background-color: var(--accent-color);
+      color: #ffffff;
+    }
+
+    /* Selector de color */
+    .viewer-color-picker {
+      position: absolute;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-pill);
+      padding: 0.35rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      z-index: 5;
+    }
+
+    .color-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .color-dots {
+      display: flex;
+      gap: 0.45rem;
+    }
+
+    .color-dot-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      outline: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .color-dot-btn:hover {
+      transform: scale(1.15);
+    }
+
+    .color-dot-btn.active {
+      outline-color: var(--accent-color);
+      transform: scale(1.1);
+    }
+
+    .viewer-hint {
+      position: absolute;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--radius-pill);
+      pointer-events: none;
+    }
+
+    /* Cartel de carga / estado */
+    .viewer-loading-msg {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: #64748b;
+      font-size: 0.9rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-card);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      z-index: 4;
+    }
+
+    .viewer-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--accent-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* LADO DERECHO: Pregunta de Unidades & Cotizador */
+    .viewer-right-col {
+      flex: 1;
+      max-width: 520px;
+      background-color: #ffffff;
+      padding: 2.25rem 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+    }
+
+    .config-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    .config-header-block {
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 1.25rem;
+    }
+
+    .config-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+    }
+
+    .config-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    /* Tarjetas de Medidas / Resumen geométrico */
+    .geometry-cards-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr) 1.2fr;
+      gap: 0.5rem;
+    }
+
+    .geo-pill {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.65rem 0.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .geo-label {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .geo-val {
+      font-size: 0.925rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Sección de Unidades */
+    .units-section {
+      background-color: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: var(--radius-card);
+      padding: 1.35rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .units-question {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .units-selector-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .stepper-container {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-pill);
+      background-color: #ffffff;
+      padding: 0.25rem;
+      width: 170px;
+    }
+
+    .stepper-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background-color: #f1f5f9;
+      color: #334155;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .stepper-btn:hover {
+      background-color: var(--accent-color);
+      color: #ffffff;
+    }
+
+    .stepper-input {
+      flex: 1;
+      width: 50px;
+      border: none;
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .quick-units-group {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .quick-unit-chip {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-pill);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .quick-unit-chip:hover, .quick-unit-chip.active {
+      background-color: #1e252b;
+      color: #ffffff;
+      border-color: #1e252b;
+    }
+
+    /* Caja de Precio Dinámico */
+    .pricing-summary-box {
+      background: linear-gradient(135deg, #fafaf9 0%, #f5f3f0 100%);
+      border: 1.5px solid rgba(194, 120, 53, 0.25);
+      border-radius: var(--radius-card);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-summary-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background-color: var(--accent-color);
+    }
+
+    .price-row-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      color: #64748b;
+    }
+
+    .price-row-item.highlight-total {
+      border-top: 1px dashed rgba(194, 120, 53, 0.3);
+      padding-top: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    .price-total-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .price-total-amount {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--accent-color);
+      letter-spacing: -0.02em;
+    }
+
+    .price-formula-note {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Botón de Confirmación */
+    .action-panel-bottom {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+    }
+
+    .order-submit-btn {
+      width: 100%;
+      background-color: var(--accent-color);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 1rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(194, 120, 53, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .order-submit-btn:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(194, 120, 53, 0.45);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: var(--radius-card);
+      padding: 2rem;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .viewer-split-layout {
+        flex-direction: column;
+      }
+      .viewer-left-col {
+        min-height: 420px;
+        height: 55vh;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .viewer-right-col {
+        max-width: 100%;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="viewer-layout-body">
+
+  <!-- Barra de Navegación -->
+  <header class="viewer-navbar">
+    <div class="nav-left-group">
+      <a href="index.html" class="brand-mini-link" title="Volver a la página principal">
+        <img src="assets/logo.jpg" alt="Abella Print Tech" class="brand-mini-logo">
+      </a>
+      <a href="index.html" class="back-home-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Volver al inicio</span>
+      </a>
+    </div>
+
+    <div class="nav-right-group">
+      <div class="file-badge-pill" id="fileBadgeDisplay">
+        <span class="status-dot-active"></span>
+        <span id="fileNameLabel">Preparando modelo...</span>
+      </div>
+
+      <label class="change-file-btn" title="Cargar otro archivo 3D">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Cambiar archivo</span>
+        <input type="file" id="changeFileInput" class="file-input-inline-hidden" accept=".stl,.obj,.3mf,.step,.stp" onchange="onFileReplaced(event)">
+      </label>
+    </div>
+  </header>
+
+  <!-- Disposición Dividida: Visor 3D (Izquierda) + Cotizador (Derecha) -->
+  <main class="viewer-split-layout">
+    
+    <!-- LADO IZQUIERDO: Previsualización 3D Interactiva -->
+    <section class="viewer-left-col" id="viewerLeftCol">
+      <div class="viewer-overlay-top">
+        <div class="dimensions-badge">
+          <span class="dimensions-title">Dimensiones reales</span>
+          <span class="dimensions-values" id="overlayDims">X: -- &bull; Y: -- &bull; Z: -- mm</span>
+        </div>
+
+        <div class="viewer-controls-bar">
+          <button type="button" class="ctrl-tool-btn active" id="autoRotateBtn" title="Activar/desactivar auto-rotación" onclick="toggleAutoRotate()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+          <button type="button" class="ctrl-tool-btn" title="Recentrar modelo" onclick="resetCameraView()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M3 9V5a2 2 0 0 1 2-2h4"></path>
+              <path d="M21 9V5a2 2 0 0 0-2-2h-4"></path>
+              <path d="M3 15v4a2 2 0 0 0 2 2h4"></path>
+              <path d="M21 15v4a2 2 0 0 1-2 2h-4"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor del lienzo 3D -->
+      <div id="threeCanvasContainer">
+        <div class="viewer-loading-msg" id="viewerLoadingMsg">
+          <div class="viewer-spinner"></div>
+          <span>Cargando geometría 3D...</span>
+        </div>
+      </div>
+
+      <!-- Selector de color -->
+      <div class="viewer-color-picker">
+        <span class="color-label">Color:</span>
+        <div class="color-dots">
+          <button type="button" class="color-dot-btn active" style="background-color: #c27835;" title="Bronce Abella" onclick="changeModelColor('#c27835', this)"></button>
+          <button type="button" class="color-dot-btn" style="background-color: #475569;" title="Gris Titanio" onclick="changeModelColor('#475569', this)"></button>
+          <button type="button" class="color-dot-btn" style="background-color: #1e252b;" title="Negro Mate" onclick="changeModelColor('#1e252b', this)"></button>
+          <button type="button" class="color-dot-btn" style="background-color: #ffffff; border: 2px solid #cbd5e1;" title="Blanco Marfil" onclick="changeModelColor('#f8fafc', this)"></button>
+          <button type="button" class="color-dot-btn" style="background-color: #2563eb;" title="Azul Eléctrico" onclick="changeModelColor('#2563eb', this)"></button>
+        </div>
+      </div>
+
+      <div class="viewer-hint">
+        <span>Arrastra para rotar &bull; Rueda para zoom</span>
+      </div>
+    </section>
+
+    <!-- LADO DERECHO: Pregunta de Unidades & Cotizador -->
+    <section class="viewer-right-col">
+      <div class="config-panel">
+        
+        <div class="config-header-block">
+          <h1 class="config-title">Configurar Pedido</h1>
+          <p class="config-subtitle">Revisa el volumen y elige la cantidad de unidades que deseas fabricar.</p>
+        </div>
+
+        <!-- Tarjetas de medidas -->
+        <div class="geometry-cards-row">
+          <div class="geo-pill">
+            <span class="geo-label">Ancho (X)</span>
+            <span class="geo-val" id="dimXLabel">-- mm</span>
+          </div>
+          <div class="geo-pill">
+            <span class="geo-label">Prof. (Y)</span>
+            <span class="geo-val" id="dimYLabel">-- mm</span>
+          </div>
+          <div class="geo-pill">
+            <span class="geo-label">Alto (Z)</span>
+            <span class="geo-val" id="dimZLabel">-- mm</span>
+          </div>
+          <div class="geo-pill" style="background-color: #fafaf9; border-color: rgba(194, 120, 53, 0.25);">
+            <span class="geo-label" style="color: var(--accent-color);">Volumen</span>
+            <span class="geo-val" id="volumeLabel">-- cm³</span>
+          </div>
+        </div>
+
+        <!-- Pregunta: ¿Cuántas unidades quieres imprimir? -->
+        <div class="units-section">
+          <label class="units-question" for="unitsCountInput">
+            ¿Cuántas unidades quieres imprimir?
+          </label>
+
+          <div class="units-selector-row">
+            <div class="stepper-container">
+              <button type="button" class="stepper-btn" onclick="adjustUnits(-1)" title="Restar una unidad">&minus;</button>
+              <input 
+                type="number" 
+                id="unitsCountInput" 
+                class="stepper-input" 
+                value="1" 
+                min="1" 
+                max="999" 
+                oninput="onUnitsChanged()"
+              >
+              <button type="button" class="stepper-btn" onclick="adjustUnits(1)" title="Sumar una unidad">&plus;</button>
+            </div>
+
+            <!-- Accesos rápidos -->
+            <div class="quick-units-group">
+              <button type="button" class="quick-unit-chip active" onclick="setUnits(1)">1 ud</button>
+              <button type="button" class="quick-unit-chip" onclick="setUnits(5)">5 uds</button>
+              <button type="button" class="quick-unit-chip" onclick="setUnits(10)">10 uds</button>
+              <button type="button" class="quick-unit-chip" onclick="setUnits(25)">25 uds</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Caja de Precio Dinámico según tamaño y unidades -->
+        <div class="pricing-summary-box">
+          <div class="price-row-item">
+            <span>Volumen y material estimado:</span>
+            <strong id="pricePerUnitLabel">-- € / ud</strong>
+          </div>
+          <div class="price-row-item">
+            <span>Cantidad solicitada:</span>
+            <strong id="unitsSummaryLabel">1 unidad</strong>
+          </div>
+          <div class="price-row-item" id="discountRow" style="display: none; color: #10b981;">
+            <span>Descuento por lote:</span>
+            <strong id="discountAmountLabel">-0.00 €</strong>
+          </div>
+
+          <!-- Total final -->
+          <div class="price-row-item highlight-total">
+            <span class="price-total-label">Precio Estimado:</span>
+            <span class="price-total-amount" id="totalPriceDisplay">-- €</span>
+          </div>
+
+          <p class="price-formula-note">
+            Calculado automáticamente en base al volumen de tu objeto 3D (<span id="noteVolume">--</span> cm³) y las unidades seleccionadas. Incluye IVA y preparación.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Botón de acción final -->
+      <div class="action-panel-bottom">
+        <button type="button" class="order-submit-btn" onclick="openOrderModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Confirmar e Iniciar Pedido</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal de Confirmación -->
+  <div class="modal-backdrop" id="orderModal">
+    <div class="modal-card">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h2 style="font-size: 1.3rem; color: #0f172a; margin: 0;">¡Pedido 3D Configurado!</h2>
+      <p style="font-size: 0.95rem; color: #64748b; line-height: 1.5; margin: 0;" id="modalSummaryText"></p>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; text-align: left; font-size: 0.85rem; color: #334155; display: flex; flex-direction: column; gap: 0.35rem;" id="modalOrderDetails"></div>
+      <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.5rem;">
+        <a href="index.html" class="order-submit-btn" style="text-decoration: none; padding: 0.75rem 1.5rem; font-size: 0.9rem;">
+          Volver a Inicio
+        </a>
+        <button type="button" class="back-home-btn" onclick="closeOrderModal()" style="padding: 0.75rem 1.25rem;">
+          Modificar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT COMPLETO Y AUTÓNOMO (Three.js + Parser STL Integrado + Controles Robustos) -->
+  <script>
+    let scene, camera, renderer, mesh, modelGroup;
+    let autoRotate = true;
+    let currentModelColor = 0xc27835; // Bronce Abella
+    let currentDimensions = { x: 50, y: 50, z: 25 };
+    let currentVolumeCm3 = 18.5;
+    let currentFileName = "Modelo_3D.stl";
+
+    // Variables de control de rotación manual
+    let isDragging = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let rotationVelocityX = 0;
+    let rotationVelocityY = 0;
+    let cameraDistance = 100;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      initViewer();
+      setupDragAndDrop();
+      await loadStoredModel();
+    });
+
+    /**
+     * Inicializa Three.js de forma ultra-robusta
+     */
+    function initViewer() {
+      const container = document.getElementById('threeCanvasContainer');
+      if (!container) return;
+
+      const width = container.clientWidth || 650;
+      const height = container.clientHeight || 550;
+
+      // 1. Escena
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf6f7f9);
+
+      // Grupo para contener el modelo y la cuadrícula
+      modelGroup = new THREE.Group();
+      scene.add(modelGroup);
+
+      // 2. Cámara
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+      camera.position.set(0, 70, 110);
+      camera.lookAt(0, 15, 0);
+
+      // 3. Renderizador WebGL
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // 4. Luces de estudio completas
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.75);
+      hemiLight.position.set(0, 200, 0);
+      scene.add(hemiLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
+      dirLight1.position.set(100, 150, 100);
+      dirLight1.castShadow = true;
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xc27835, 0.45); // Calidez bronce
+      dirLight2.position.set(-100, 50, -100);
+      scene.add(dirLight2);
+
+      const dirLight3 = new THREE.DirectionalLight(0xffffff, 0.35);
+      dirLight3.position.set(0, -50, 80);
+      scene.add(dirLight3);
+
+      // 5. Cama de impresión 3D
+      const grid = new THREE.GridHelper(160, 16, 0xc27835, 0xd1d5db);
+      grid.position.y = 0;
+      scene.add(grid);
+
+      // 6. Controles manuales directos sobre el lienzo
+      setupManualControls(renderer.domElement);
+
+      // 7. Eventos de redimensionado
+      window.addEventListener('resize', onWindowResize);
+
+      // Iniciar bucle de render
+      animate();
+    }
+
+    /**
+     * Bucle continuo de animación Three.js
+     */
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (autoRotate && !isDragging && modelGroup) {
+        modelGroup.rotation.y += 0.008;
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('threeCanvasContainer');
+      if (!container || !renderer || !camera) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    /**
+     * Controles orbitales ligeros integrados (sin depender de librerías externas)
+     */
+    function setupManualControls(domElement) {
+      domElement.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging || !modelGroup) return;
+        const deltaX = e.clientX - prevMouseX;
+        const deltaY = e.clientY - prevMouseY;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+
+        modelGroup.rotation.y += deltaX * 0.012;
+        modelGroup.rotation.x += deltaY * 0.008;
+
+        // Limitar inclinación vertical para no voltear
+        modelGroup.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, modelGroup.rotation.x));
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+
+      // Zoom con rueda de ratón
+      domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomDelta = e.deltaY * 0.08;
+        cameraDistance = Math.max(30, Math.min(500, cameraDistance + zoomDelta));
+        updateCameraDistance();
+      }, { passive: false });
+
+      // Soporte táctil en móviles
+      let touchStartX = 0, touchStartY = 0;
+      domElement.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      });
+      domElement.addEventListener('touchmove', (e) => {
+        if (!isDragging || !modelGroup || e.touches.length !== 1) return;
+        const deltaX = e.touches[0].clientX - touchStartX;
+        const deltaY = e.touches[0].clientY - touchStartY;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+
+        modelGroup.rotation.y += deltaX * 0.015;
+        modelGroup.rotation.x += deltaY * 0.01;
+      });
+      domElement.addEventListener('touchend', () => { isDragging = false; });
+    }
+
+    function updateCameraDistance() {
+      if (!camera) return;
+      const dir = camera.position.clone().normalize();
+      camera.position.copy(dir.multiplyScalar(cameraDistance));
+    }
+
+    /**
+     * Carga el modelo 3D guardado desde IndexedDB o sessionStorage
+     */
+    async function loadStoredModel() {
+      showLoading(true);
+
+      // Metadatos
+      try {
+        const metaStr = sessionStorage.getItem('uploaded3DFile');
+        if (metaStr) {
+          const meta = JSON.parse(metaStr);
+          if (meta.name) {
+            currentFileName = meta.name;
+            document.getElementById('fileNameLabel').textContent = meta.name;
+          }
+        }
+      } catch (e) {}
+
+      // 1. Intentar leer desde IndexedDB (buffer completo)
+      let modelData = await getBufferFromDB();
+
+      // 2. Si no está en IndexedDB, intentar desde sessionStorage base64
+      if (!modelData || !modelData.buffer) {
+        modelData = getBufferFromSessionStorage();
+      }
+
+      if (modelData && modelData.buffer) {
+        currentFileName = modelData.name || currentFileName;
+        document.getElementById('fileNameLabel').textContent = currentFileName;
+        parseAndRenderArrayBuffer(modelData.buffer, currentFileName);
+      } else {
+        // Modelo 3D emblemático de demostración garantizado
+        createDefault3DModel();
+      }
+
+      showLoading(false);
+    }
+
+    /**
+     * Recupera el ArrayBuffer desde IndexedDB
+     */
+    function getBufferFromDB() {
+      return new Promise((resolve) => {
+        try {
+          const req = indexedDB.open('AbellaPrint3D', 2);
+          req.onsuccess = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('models')) return resolve(null);
+            const tx = db.transaction('models', 'readonly');
+            const store = tx.objectStore('models');
+            const getReq = store.get('currentModel');
+            getReq.onsuccess = () => resolve(getReq.result || null);
+            getReq.onerror = () => resolve(null);
+          };
+          req.onerror = () => resolve(null);
+        } catch (err) {
+          resolve(null);
+        }
+      });
+    }
+
+    /**
+     * Recupera el modelo desde base64 en sessionStorage
+     */
+    function getBufferFromSessionStorage() {
+      try {
+        const b64 = sessionStorage.getItem('uploaded3DBase64');
+        const metaStr = sessionStorage.getItem('uploaded3DFile');
+        const meta = metaStr ? JSON.parse(metaStr) : {};
+        if (!b64) return null;
+
+        const binary = atob(b64);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return { buffer: bytes.buffer, name: meta.name || 'Modelo_3D.stl' };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    /**
+     * Parsea cualquier ArrayBuffer (STL binario o ASCII) y lo renderiza
+     */
+    function parseAndRenderArrayBuffer(buffer, fileName) {
+      try {
+        const geometry = parseSTLBuffer(buffer);
+        if (geometry && geometry.attributes.position && geometry.attributes.position.count > 0) {
+          displayGeometry(geometry);
+        } else {
+          console.warn("Geometría vacía, cargando modelo por defecto");
+          createDefault3DModel();
+        }
+      } catch (err) {
+        console.error("Error parseando STL:", err);
+        createDefault3DModel();
+      }
+    }
+
+    /**
+     * Parser STL nativo ultra-rápido y autónomo (soporta Binary y ASCII)
+     */
+    function parseSTLBuffer(buffer) {
+      if (!buffer || buffer.byteLength < 40) return null;
+
+      // Detección automática de Binary vs ASCII
+      const isAscii = checkIsAsciiSTL(buffer);
+
+      if (isAscii) {
+        return parseAsciiSTL(new TextDecoder().decode(buffer));
+      } else {
+        return parseBinarySTL(buffer);
+      }
+    }
+
+    function checkIsAsciiSTL(buffer) {
+      const headerLength = Math.min(200, buffer.byteLength);
+      const bytes = new Uint8Array(buffer, 0, headerLength);
+      let text = '';
+      for (let i = 0; i < headerLength; i++) {
+        text += String.fromCharCode(bytes[i]);
+      }
+      // Si contiene 'solid' y 'facet' o 'vertex' en el inicio
+      if (text.toLowerCase().includes('solid') && text.toLowerCase().includes('facet')) {
+        return true;
+      }
+      return false;
+    }
+
+    function parseBinarySTL(buffer) {
+      const reader = new DataView(buffer);
+      const numTriangles = reader.getUint32(80, true);
+      const positions = new Float32Array(numTriangles * 9);
+      const normals = new Float32Array(numTriangles * 9);
+      let offset = 84;
+      let pIdx = 0;
+
+      for (let i = 0; i < numTriangles; i++) {
+        if (offset + 50 > buffer.byteLength) break;
+        const nx = reader.getFloat32(offset, true);
+        const ny = reader.getFloat32(offset + 4, true);
+        const nz = reader.getFloat32(offset + 8, true);
+        offset += 12;
+
+        for (let v = 0; v < 3; v++) {
+          positions[pIdx] = reader.getFloat32(offset, true);
+          positions[pIdx + 1] = reader.getFloat32(offset + 4, true);
+          positions[pIdx + 2] = reader.getFloat32(offset + 8, true);
+          normals[pIdx] = nx;
+          normals[pIdx + 1] = ny;
+          normals[pIdx + 2] = nz;
+          pIdx += 3;
+          offset += 12;
+        }
+        offset += 2;
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions.subarray(0, pIdx), 3));
+      geometry.setAttribute('normal', new THREE.BufferAttribute(normals.subarray(0, pIdx), 3));
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    function parseAsciiSTL(text) {
+      const lines = text.split('\n');
+      const positions = [];
+      const normals = [];
+      let curNormal = [0, 1, 0];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('facet normal')) {
+          const parts = line.split(/\s+/);
+          curNormal = [parseFloat(parts[2]) || 0, parseFloat(parts[3]) || 0, parseFloat(parts[4]) || 0];
+        } else if (line.startsWith('vertex')) {
+          const parts = line.split(/\s+/);
+          positions.push(parseFloat(parts[1]) || 0, parseFloat(parts[2]) || 0, parseFloat(parts[3]) || 0);
+          normals.push(curNormal[0], curNormal[1], curNormal[2]);
+        }
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+      geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3));
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    /**
+     * Crea un modelo 3D emblemático si no hay archivo
+     */
+    function createDefault3DModel() {
+      // Prisma hexagonal tipo placa con relieve Abella
+      const shape = new THREE.Shape();
+      const sides = 6;
+      const radius = 28;
+      for (let i = 0; i < sides; i++) {
+        const angle = (i * 2 * Math.PI) / sides;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        if (i === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+      }
+      shape.closePath();
+
+      const extrudeSettings = { depth: 16, bevelEnabled: true, bevelSegments: 3, steps: 2, bevelSize: 2, bevelThickness: 2 };
+      const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      geometry.rotateX(-Math.PI / 2);
+      displayGeometry(geometry);
+    }
+
+    /**
+     * Muestra la geometría en la escena con escala adaptativa y centrado
+     */
+    function displayGeometry(geometry) {
+      if (!scene || !modelGroup) return;
+
+      // Limpiar modelo previo
+      if (mesh) {
+        modelGroup.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+      }
+
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+
+      // Dimensiones iniciales
+      const bbox = geometry.boundingBox;
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+
+      // Auto-detección de escala: si el modelo viene en metros (< 1.5 unidades), escalar a mm
+      const maxDimRaw = Math.max(size.x, size.y, size.z);
+      if (maxDimRaw < 1.5 && maxDimRaw > 0.0001) {
+        geometry.scale(1000, 1000, 1000);
+        geometry.computeBoundingBox();
+        geometry.boundingBox.getSize(size);
+      } else if (maxDimRaw > 3000) {
+        // En micras
+        geometry.scale(0.001, 0.001, 0.001);
+        geometry.computeBoundingBox();
+        geometry.boundingBox.getSize(size);
+      }
+
+      // Centrar el modelo en su punto central
+      geometry.center();
+
+      // Guardar dimensiones
+      currentDimensions = {
+        x: Math.max(1, Math.round(size.x * 10) / 10),
+        y: Math.max(1, Math.round(size.y * 10) / 10),
+        z: Math.max(1, Math.round(size.z * 10) / 10)
+      };
+
+      currentVolumeCm3 = calculateGeometryVolume(geometry, currentDimensions);
+
+      // Material
+      const material = new THREE.MeshStandardMaterial({
+        color: currentModelColor,
+        metalness: 0.35,
+        roughness: 0.4,
+        flatShading: false
+      });
+
+      mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      // Apoyar la base sobre la cama (y = 0)
+      mesh.position.y = size.y / 2;
+      modelGroup.add(mesh);
+
+      // Ajustar cámara para que el modelo ocupe el tamaño perfecto en pantalla
+      const maxDim = Math.max(size.x, size.y, size.z);
+      cameraDistance = Math.max(70, maxDim * 2.2);
+      camera.position.set(0, cameraDistance * 0.55, cameraDistance);
+      camera.lookAt(0, size.y / 2, 0);
+
+      updateDimensionsUI();
+      recalculatePrice();
+    }
+
+    /**
+     * Calcula el volumen real en cm3
+     */
+    function calculateGeometryVolume(geometry, dims) {
+      let position = geometry.attributes.position;
+      if (!position) return (dims.x * dims.y * dims.z * 0.22) / 1000;
+      
+      let faces = position.count / 3;
+      let totalVolume = 0;
+      let p1 = new THREE.Vector3(), p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
+
+      for (let i = 0; i < faces; i++) {
+        p1.fromBufferAttribute(position, i * 3);
+        p2.fromBufferAttribute(position, i * 3 + 1);
+        p3.fromBufferAttribute(position, i * 3 + 2);
+        totalVolume += p1.dot(p2.cross(p3)) / 6.0;
+      }
+
+      let vol = Math.abs(totalVolume) / 1000.0;
+      if (vol < 0.2 || isNaN(vol)) {
+        vol = (dims.x * dims.y * dims.z * 0.22) / 1000.0;
+      }
+      return Math.round(vol * 10) / 10;
+    }
+
+    function updateDimensionsUI() {
+      const xStr = currentDimensions.x.toFixed(1);
+      const yStr = currentDimensions.y.toFixed(1);
+      const zStr = currentDimensions.z.toFixed(1);
+
+      document.getElementById('overlayDims').textContent = `X: ${xStr} • Y: ${yStr} • Z: ${zStr} mm`;
+      document.getElementById('dimXLabel').textContent = `${xStr} mm`;
+      document.getElementById('dimYLabel').textContent = `${yStr} mm`;
+      document.getElementById('dimZLabel').textContent = `${zStr} mm`;
+      document.getElementById('volumeLabel').textContent = `${currentVolumeCm3.toFixed(1)} cm³`;
+      document.getElementById('noteVolume').textContent = currentVolumeCm3.toFixed(1);
+    }
+
+    /**
+     * Recalcula precio según tamaño y unidades
+     */
+    function recalculatePrice() {
+      const unitsInput = document.getElementById('unitsCountInput');
+      let units = parseInt(unitsInput.value, 10) || 1;
+      if (units < 1) units = 1;
+
+      // Fórmula: Preparación base + (volumen en cm3 * 0.22 €)
+      const basePreparation = 2.80;
+      const materialRate = 0.22;
+      let unitPrice = basePreparation + (currentVolumeCm3 * materialRate);
+      unitPrice = Math.max(3.90, unitPrice);
+
+      let discountRate = 0;
+      if (units >= 25) discountRate = 0.15;
+      else if (units >= 10) discountRate = 0.10;
+      else if (units >= 5) discountRate = 0.05;
+
+      const subtotal = unitPrice * units;
+      const discountAmount = subtotal * discountRate;
+      const totalFinal = subtotal - discountAmount;
+
+      document.getElementById('pricePerUnitLabel').textContent = `${unitPrice.toFixed(2)} € / ud`;
+      document.getElementById('unitsSummaryLabel').textContent = `${units} ${units === 1 ? 'unidad' : 'unidades'}`;
+      
+      const discountRow = document.getElementById('discountRow');
+      if (discountRate > 0) {
+        discountRow.style.display = 'flex';
+        document.getElementById('discountAmountLabel').textContent = `-${discountAmount.toFixed(2)} € (${discountRate * 100}%)`;
+      } else {
+        discountRow.style.display = 'none';
+      }
+
+      document.getElementById('totalPriceDisplay').textContent = `${totalFinal.toFixed(2)} €`;
+
+      const chips = document.querySelectorAll('.quick-unit-chip');
+      chips.forEach(c => {
+        const val = parseInt(c.textContent, 10);
+        c.classList.toggle('active', val === units);
+      });
+    }
+
+    function adjustUnits(delta) {
+      const input = document.getElementById('unitsCountInput');
+      let current = parseInt(input.value, 10) || 1;
+      current += delta;
+      if (current < 1) current = 1;
+      if (current > 999) current = 999;
+      input.value = current;
+      recalculatePrice();
+    }
+
+    function setUnits(count) {
+      const input = document.getElementById('unitsCountInput');
+      input.value = count;
+      recalculatePrice();
+    }
+
+    function onUnitsChanged() {
+      recalculatePrice();
+    }
+
+    function toggleAutoRotate() {
+      autoRotate = !autoRotate;
+      const btn = document.getElementById('autoRotateBtn');
+      if (btn) btn.classList.toggle('active', autoRotate);
+    }
+
+    function resetCameraView() {
+      if (modelGroup) {
+        modelGroup.rotation.set(0, 0, 0);
+        const maxDim = Math.max(currentDimensions.x, currentDimensions.y, currentDimensions.z);
+        cameraDistance = Math.max(70, maxDim * 2.2);
+        camera.position.set(0, cameraDistance * 0.55, cameraDistance);
+        camera.lookAt(0, currentDimensions.y / 2, 0);
+      }
+    }
+
+    function changeModelColor(hexColor, buttonEl) {
+      currentModelColor = parseInt(hexColor.replace('#', '0x'), 16);
+      if (mesh && mesh.material) {
+        mesh.material.color.setHex(currentModelColor);
+      }
+      const buttons = document.querySelectorAll('.color-dot-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      if (buttonEl) buttonEl.classList.add('active');
+    }
+
+    function showLoading(show) {
+      const loader = document.getElementById('viewerLoadingMsg');
+      if (loader) loader.style.display = show ? 'flex' : 'none';
+    }
+
+    /**
+     * Drag & Drop directo sobre la pantalla del visor
+     */
+    function setupDragAndDrop() {
+      const leftCol = document.getElementById('viewerLeftCol');
+      if (!leftCol) return;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        leftCol.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          leftCol.style.borderColor = 'var(--accent-color)';
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        leftCol.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          leftCol.style.borderColor = '#e2e8f0';
+        });
+      });
+
+      leftCol.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          processDirectFile(files[0]);
+        }
+      });
+    }
+
+    async function onFileReplaced(event) {
+      const fileInput = event.target;
+      if (!fileInput.files || fileInput.files.length === 0) return;
+      processDirectFile(fileInput.files[0]);
+    }
+
+    async function processDirectFile(file) {
+      showLoading(true);
+      currentFileName = file.name;
+      document.getElementById('fileNameLabel').textContent = file.name;
+      const buffer = await file.arrayBuffer();
+      parseAndRenderArrayBuffer(buffer, file.name);
+      showLoading(false);
+    }
+
+    function openOrderModal() {
+      const modal = document.getElementById('orderModal');
+      const units = document.getElementById('unitsCountInput').value;
+      const total = document.getElementById('totalPriceDisplay').textContent;
+
+      document.getElementById('modalSummaryText').innerHTML = 
+        `Has configurado <strong>${units} ${units === '1' ? 'unidad' : 'unidades'}</strong> de <strong>"${escapeHtml(currentFileName)}"</strong>.`;
+
+      document.getElementById('modalOrderDetails').innerHTML = `
+        <div><strong>Archivo:</strong> ${escapeHtml(currentFileName)}</div>
+        <div><strong>Medidas:</strong> ${currentDimensions.x} × ${currentDimensions.y} × ${currentDimensions.z} mm</div>
+        <div><strong>Volumen estimado:</strong> ${currentVolumeCm3} cm³</div>
+        <div><strong>Unidades:</strong> ${units}</div>
+        <div style="font-size: 1rem; color: var(--accent-color); margin-top: 0.35rem;"><strong>Precio Total:</strong> ${total}</div>
+      `;
+
+      modal.classList.add('open');
+    }
+
+    function closeOrderModal() {
+      const modal = document.getElementById('orderModal');
+      modal.classList.remove('open');
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+  </script>
+</body>
+</html>
