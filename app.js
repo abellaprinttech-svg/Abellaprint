@@ -219,19 +219,14 @@ function fillPrompt(text) {
 function handleMindSubmit(event) {
   event.preventDefault();
   const input = document.getElementById('mindInput');
-  const responseArea = document.getElementById('responseArea');
-  const responseMessage = document.getElementById('responseMessage');
-
-  if (!responseArea || !responseMessage) return;
 
   const query = input ? input.value.trim() : '';
-  const hasFiles = selectedFiles.length > 0;
 
-  // Si no hay texto ni archivos, avisar al usuario
-  if (!query && !hasFiles) {
+  // Si no hay texto, avisar al usuario
+  if (!query) {
     if (input) {
       input.focus();
-      input.placeholder = "Por favor, escribe tu consulta o sube un archivo...";
+      input.placeholder = "Por favor, escribe tu consulta...";
       setTimeout(() => {
         input.placeholder = "¿Qué tienes en mente?";
       }, 3000);
@@ -239,24 +234,9 @@ function handleMindSubmit(event) {
     return;
   }
 
-  // Construir mensaje de respuesta
-  let details = '';
-  if (query) {
-    details += `Has consultado sobre: <strong>"${escapeHtml(query)}"</strong>.<br>`;
-  }
-  
-  if (hasFiles) {
-    const fileNames = selectedFiles.map(f => `<strong>${escapeHtml(f.name)}</strong> (${formatFileSize(f.size)})`).join(', ');
-    details += `Archivos adjuntos: ${fileNames}.<br>`;
-  }
-
-  details += `<br>¡Perfecto! En <strong>Abella Print Tech</strong> podemos hacer realidad tu diseño personalizado con la máxima calidad y detalle.`;
-
-  responseMessage.innerHTML = details;
-  responseArea.classList.remove('hidden');
-
-  // Desplazar suavemente hacia la respuesta
-  responseArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  // Guardar la consulta y redirigir a la página de consulta
+  sessionStorage.setItem('abellaConsultaQuery', query);
+  window.location.href = 'consulta.html';
 }
 
 /**

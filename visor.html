@@ -585,42 +585,7 @@
       box-shadow: 0 6px 20px rgba(194, 120, 53, 0.45);
     }
 
-    /* Modal */
-    .modal-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-      padding: 1rem;
-    }
 
-    .modal-backdrop.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal-card {
-      background: #ffffff;
-      border-radius: var(--radius-card);
-      padding: 2rem;
-      max-width: 480px;
-      width: 100%;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      text-align: center;
-    }
 
     @media (max-width: 960px) {
       .viewer-split-layout {
@@ -820,38 +785,23 @@
 
       <!-- Botón de acción final -->
       <div class="action-panel-bottom">
-        <button type="button" class="order-submit-btn" onclick="openOrderModal()">
+        <button type="button" class="order-submit-btn" onclick="addCustomDesignToCart()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
-          <span>Confirmar e Iniciar Pedido</span>
+          <span>Añadir al Carrito</span>
         </button>
       </div>
     </section>
 
   </main>
 
-  <!-- Modal de Confirmación -->
-  <div class="modal-backdrop" id="orderModal">
-    <div class="modal-card">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      </div>
-      <h2 style="font-size: 1.3rem; color: #0f172a; margin: 0;">¡Pedido 3D Configurado!</h2>
-      <p style="font-size: 0.95rem; color: #64748b; line-height: 1.5; margin: 0;" id="modalSummaryText"></p>
-      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; text-align: left; font-size: 0.85rem; color: #334155; display: flex; flex-direction: column; gap: 0.35rem;" id="modalOrderDetails"></div>
-      <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.5rem;">
-        <a href="index.html" class="order-submit-btn" style="text-decoration: none; padding: 0.75rem 1.5rem; font-size: 0.9rem;">
-          Volver a Inicio
-        </a>
-        <button type="button" class="back-home-btn" onclick="closeOrderModal()" style="padding: 0.75rem 1.25rem;">
-          Modificar
-        </button>
-      </div>
-    </div>
-  </div>
+
+
+  <!-- Script del carrito -->
+  <script src="carrito.js"></script>
 
   <!-- SCRIPT COMPLETO Y AUTÓNOMO (Three.js + Parser STL Integrado + Controles Robustos) -->
   <script>
@@ -1488,28 +1438,30 @@
       showLoading(false);
     }
 
-    function openOrderModal() {
-      const modal = document.getElementById('orderModal');
-      const units = document.getElementById('unitsCountInput').value;
-      const total = document.getElementById('totalPriceDisplay').textContent;
+    function addCustomDesignToCart() {
+      const units = parseInt(document.getElementById('unitsCountInput').value, 10) || 1;
+      const totalText = document.getElementById('totalPriceDisplay').textContent;
+      const totalPrice = parseFloat(totalText.replace(',', '.').replace(/[^\d.]/g, '')) || 0;
+      const unitPrice = units > 0 ? totalPrice / units : totalPrice;
 
-      document.getElementById('modalSummaryText').innerHTML = 
-        `Has configurado <strong>${units} ${units === '1' ? 'unidad' : 'unidades'}</strong> de <strong>"${escapeHtml(currentFileName)}"</strong>.`;
+      // Obtener el color activo actual
+      const activeColorBtn = document.querySelector('.color-dot-btn.active');
+      const colorHex = activeColorBtn ? activeColorBtn.style.backgroundColor : '#c27835';
+      const colorName = activeColorBtn ? (activeColorBtn.title || 'Bronce Abella') : 'Bronce Abella';
 
-      document.getElementById('modalOrderDetails').innerHTML = `
-        <div><strong>Archivo:</strong> ${escapeHtml(currentFileName)}</div>
-        <div><strong>Medidas:</strong> ${currentDimensions.x} × ${currentDimensions.y} × ${currentDimensions.z} mm</div>
-        <div><strong>Volumen estimado:</strong> ${currentVolumeCm3} cm³</div>
-        <div><strong>Unidades:</strong> ${units}</div>
-        <div style="font-size: 1rem; color: var(--accent-color); margin-top: 0.35rem;"><strong>Precio Total:</strong> ${total}</div>
-      `;
-
-      modal.classList.add('open');
-    }
-
-    function closeOrderModal() {
-      const modal = document.getElementById('orderModal');
-      modal.classList.remove('open');
+      addToCart({
+        productId: 'custom_design_' + Date.now(),
+        name: 'Diseño personalizado',
+        basePrice: unitPrice,
+        unitPrice: unitPrice,
+        color: colorName,
+        colorHex: colorHex,
+        materialId: 'pla',
+        materialName: 'PLA+ Premium',
+        customText: currentFileName,
+        quantity: units,
+        category: 'personalizado'
+      });
     }
 
     function escapeHtml(text) {
