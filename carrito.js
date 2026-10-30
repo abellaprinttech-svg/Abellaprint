@@ -3,7 +3,6 @@
 // ========================================================
 
 const CART_STORAGE_KEY = 'abella_print_cart_v1';
-const FREE_SHIPPING_THRESHOLD = 45.00; // Envío gratis a partir de 45€
 const STANDARD_SHIPPING_COST = 4.95;
 
 // Obtener carrito de localStorage
@@ -94,17 +93,14 @@ function getCartTotals() {
   const cart = getCart();
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const subtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
-  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
-  const shipping = subtotal === 0 ? 0 : (isFreeShipping ? 0 : STANDARD_SHIPPING_COST);
+  const shipping = subtotal === 0 ? 0 : STANDARD_SHIPPING_COST;
   const total = subtotal + shipping;
 
   return {
     totalItems,
     subtotal,
     shipping,
-    isFreeShipping,
-    total,
-    remainingForFreeShipping: Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
+    total
   };
 }
 
@@ -157,7 +153,7 @@ function renderCartDrawerContent() {
     <div class="cart-item-row" data-cart-id="${item.id}">
       <div class="cart-item-swatch" style="background-color: ${item.colorHex || '#c27835'};"></div>
       <div class="cart-item-info">
-        <h4 class="cart-item-title">${escapeCartHtml(item.name)}</h4>
+        <h4 class="cart-item-title">${escapeCartHtml(item.name || 'Producto 3D')}</h4>
         <div class="cart-item-meta">
           <span>${escapeCartHtml(item.materialName || 'PLA+')}</span>
           <span>&bull;</span>
@@ -181,21 +177,10 @@ function renderCartDrawerContent() {
   const subtotalEl = document.getElementById('cartDrawerSubtotal');
   const shippingEl = document.getElementById('cartDrawerShipping');
   const totalEl = document.getElementById('cartDrawerTotal');
-  const shippingBannerEl = document.getElementById('cartShippingBanner');
 
   if (subtotalEl) subtotalEl.textContent = formatCurrency(totals.subtotal);
-  if (shippingEl) shippingEl.textContent = totals.isFreeShipping ? 'Gratis' : formatCurrency(totals.shipping);
+  if (shippingEl) shippingEl.textContent = formatCurrency(totals.shipping);
   if (totalEl) totalEl.textContent = formatCurrency(totals.total);
-
-  if (shippingBannerEl) {
-    if (totals.isFreeShipping) {
-      shippingBannerEl.className = 'shipping-promo-banner free';
-      shippingBannerEl.innerHTML = '🎉 ¡Felicidades! Tienes <strong>Envío Gratuito</strong> para este pedido.';
-    } else {
-      shippingBannerEl.className = 'shipping-promo-banner';
-      shippingBannerEl.innerHTML = `Añade <strong>${formatCurrency(totals.remainingForFreeShipping)}</strong> más para conseguir <strong>Envío Gratis</strong>.`;
-    }
-  }
 }
 
 // Abrir y cerrar Drawer del Carrito
@@ -242,9 +227,7 @@ function injectCartDrawerDOM() {
         <button type="button" class="cart-drawer-close" onclick="closeCartDrawer()" aria-label="Cerrar">&times;</button>
       </div>
 
-      <div id="cartShippingBanner" class="shipping-promo-banner"></div>
-
-      <div id="cartDrawerEmpty" class="cart-empty-state">
+      <div id="cartDrawerEmpty" class="cart-empty-state hidden">
         <div class="cart-empty-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1"></circle>
@@ -283,7 +266,7 @@ function injectCartDrawerDOM() {
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </button>
-          <a href="carrito.html" class="cart-view-full-link">Ver carrito detallado y opciones</a>
+          <a href="kickstarter.html" class="cart-view-full-link">Apóyanos en Kickstarter</a>
         </div>
       </div>
     </aside>
@@ -316,9 +299,9 @@ function showToastNotification(message) {
   }, 3200);
 }
 
-// Proceder a checkout (redirige a carrito.html con paso checkout)
+// Proceder a checkout (redirige a la página de Kickstarter)
 function proceedToCheckout() {
-  window.location.href = 'carrito.html?step=checkout';
+  window.location.href = 'kickstarter.html';
 }
 
 function escapeCartHtml(text) {
@@ -329,6 +312,50 @@ function escapeCartHtml(text) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// Añadir rápido al carrito desde el catálogo general
+function quickAddToCart(productId) {
+  if (typeof getProductById !== 'function') return;
+  const product = getProductById(productId);
+  if (!product) return;
+
+  addToCart({
+    productId: product.id,
+    name: product.name,
+    basePrice: product.price,
+    unitPrice: product.price,
+    color: 'Negro Mate',
+    colorHex: '#1e2022',
+    materialId: 'pla',
+    materialName: 'PLA+ Premium',
+    customText: '',
+    quantity: 1,
+    category: product.category
+  });
+}
+
+// Compra directa instantánea desde el catálogo general
+function quickDirectBuy(productId) {
+  if (typeof getProductById !== 'function') return;
+  const product = getProductById(productId);
+  if (!product) return;
+
+  addToCart({
+    productId: product.id,
+    name: product.name,
+    basePrice: product.price,
+    unitPrice: product.price,
+    color: 'Negro Mate',
+    colorHex: '#1e2022',
+    materialId: 'pla',
+    materialName: 'PLA+ Premium',
+    customText: '',
+    quantity: 1,
+    category: product.category
+  });
+
+  window.location.href = 'kickstarter.html';
 }
 
 // Inicialización automática

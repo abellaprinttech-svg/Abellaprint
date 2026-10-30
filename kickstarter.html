@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apóyanos en Kickstarter – Abella Print Tech</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(135deg,#0f0f0f 0%,#1a1a2e 50%,#16213e 100%);
+      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+      color:#e2e8f0;
+      padding:1.5rem;
+    }
+    .ks-card{
+      max-width:520px;
+      width:100%;
+      background:rgba(255,255,255,.06);
+      backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:1.25rem;
+      padding:3rem 2.5rem;
+      text-align:center;
+      animation:fadeUp .6s ease-out;
+    }
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(24px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .ks-logo{
+      width:90px;
+      height:90px;
+      margin:0 auto 1.5rem;
+      border-radius:50%;
+      background:linear-gradient(135deg,#05ce78,#00b4d8);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .ks-logo svg{color:#fff}
+    .ks-title{
+      font-size:1.75rem;
+      font-weight:700;
+      margin-bottom:.75rem;
+      line-height:1.3;
+    }
+    .ks-highlight{
+      background:linear-gradient(90deg,#05ce78,#00b4d8);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    .ks-desc{
+      font-size:1rem;
+      color:#94a3b8;
+      line-height:1.65;
+      margin-bottom:2rem;
+    }
+    .ks-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:.6rem;
+      padding:1rem 2.25rem;
+      background:linear-gradient(135deg,#05ce78,#00b4d8);
+      color:#fff;
+      font-size:1.05rem;
+      font-weight:600;
+      border:none;
+      border-radius:.75rem;
+      cursor:pointer;
+      text-decoration:none;
+      transition:transform .2s,box-shadow .2s;
+      box-shadow:0 4px 20px rgba(5,206,120,.35);
+    }
+    .ks-btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 8px 30px rgba(5,206,120,.45);
+    }
+    .ks-btn:active{transform:translateY(0)}
+    .ks-btn svg{flex-shrink:0}
+    .ks-back{
+      display:inline-block;
+      margin-top:1.5rem;
+      color:#64748b;
+      font-size:.875rem;
+      text-decoration:none;
+      transition:color .2s;
+    }
+    .ks-back:hover{color:#e2e8f0}
+  </style>
+</head>
+<body>
+  <div class="ks-card">
+    <div class="ks-logo">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </div>
+
+    <h1 class="ks-title">
+      ¡<span class="ks-highlight">Apóyanos</span> en Kickstarter!
+    </h1>
+
+    <p class="ks-desc">
+      Estamos trabajando para hacer realidad este proyecto. La tienda estará disponible muy pronto.
+      Mientras tanto, puedes apoyarnos en nuestra campaña de Kickstarter y ser de los primeros en
+      conseguir nuestros productos impresos en 3D a precios exclusivos.
+    </p>
+
+    <a id="kickstarterLink" href="#" target="_blank" rel="noopener noreferrer" class="ks-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+      Ir a Kickstarter
+    </a>
+
+    <br>
+    <a href="index.html" class="ks-back">← Volver al catálogo</a>
+  </div>
+</body>
+</html>

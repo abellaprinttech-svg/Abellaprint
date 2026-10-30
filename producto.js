@@ -19,9 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.getElementById('currentYear');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Obtener ID del producto desde URL query param
+  // Obtener ID del producto desde URL query param o constante global
   const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
+  let productId = urlParams.get('id');
+  if (!productId && window.STATIC_PRODUCT_ID) {
+    productId = window.STATIC_PRODUCT_ID;
+  }
 
   if (!productId || typeof getProductById !== 'function') {
     showProductNotFound();
@@ -76,6 +79,9 @@ function initProductUI() {
   if (customGroup && !currentProduct.customizable) {
     customGroup.style.display = 'none';
   }
+
+  // Renderizar productos relacionados
+  renderRelatedProducts();
 
   // Renderizar opciones de materiales
   const matContainer = document.getElementById('materialOptionsContainer');
@@ -195,10 +201,10 @@ function handleAddToCartClick() {
   });
 }
 
-// Comprar Ahora (va directo a carrito/checkout)
+// Comprar Ahora (redirige a la página de Kickstarter)
 function handleBuyNowClick() {
   handleAddToCartClick();
-  window.location.href = 'carrito.html?step=checkout';
+  window.location.href = 'kickstarter.html';
 }
 
 // ========================================================
@@ -289,6 +295,24 @@ function buildProductGeometry() {
   let geometry;
 
   switch (shapeType) {
+    case 'arch':
+      geometry = new THREE.TorusGeometry(1.8, 0.4, 16, 50, Math.PI);
+      break;
+    case 'cube':
+      geometry = new THREE.BoxGeometry(2.4, 2.4, 2.4);
+      break;
+    case 'gear':
+      geometry = new THREE.CylinderGeometry(1.9, 1.9, 0.65, 14);
+      break;
+    case 'cloud':
+      geometry = new THREE.DodecahedronGeometry(1.9, 2);
+      break;
+    case 'origami':
+      geometry = new THREE.ConeGeometry(1.8, 3.2, 6);
+      break;
+    case 'articulated':
+      geometry = new THREE.CylinderGeometry(0.7, 1.4, 3.8, 10);
+      break;
     case 'tower':
       geometry = new THREE.CylinderGeometry(1.2, 1.8, 4, 8);
       break;
@@ -309,8 +333,10 @@ function buildProductGeometry() {
       geometry = new THREE.CylinderGeometry(1.5, 2.2, 2.5, 6);
       break;
     case 'sphere':
-    case 'lithophane':
       geometry = new THREE.SphereGeometry(1.8, 48, 48);
+      break;
+    case 'lithophane':
+      geometry = new THREE.CylinderGeometry(2.2, 2.2, 3.0, 32, 1, true, -Math.PI / 3, (2 * Math.PI) / 3);
       break;
     case 'mask':
     case 'horns':
@@ -484,4 +510,30 @@ function animateViewer() {
   if (renderer && scene && camera) {
     renderer.render(scene, camera);
   }
+}
+
+// Renderizar sección de productos relacionados
+function renderRelatedProducts() {
+  const grid = document.getElementById('relatedProductsGrid');
+  if (!grid || !window.PRODUCTS || !currentProduct) return;
+
+  const sameCategory = window.PRODUCTS.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id).slice(0, 4);
+  const fallback = sameCategory.length < 4 
+    ? [...sameCategory, ...window.PRODUCTS.filter(p => p.id !== currentProduct.id && !sameCategory.includes(p))].slice(0, 4)
+    : sameCategory;
+
+  grid.innerHTML = fallback.map(p => `
+    <div class="related-card">
+      <div class="related-card-top">
+        <span class="related-tag">${escapeCartHtml(p.tag)}</span>
+        <span class="related-cat">${escapeCartHtml(p.categoryLabel)}</span>
+      </div>
+      <h4 class="related-title-text">${escapeCartHtml(p.name)}</h4>
+      <p class="related-desc">${escapeCartHtml(p.shortDesc)}</p>
+      <div class="related-card-bottom">
+        <span class="related-price">${p.price.toFixed(2)} €</span>
+        <a href="producto.html?id=${p.id}" class="related-btn-view">Ver Ficha 3D &rarr;</a>
+      </div>
+    </div>
+  `).join('');
 }

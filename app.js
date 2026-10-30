@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (errorBox) errorBox.classList.add('hidden');
     });
   }
+
+  // Inicializar Catálogo Dinámico
+  initCatalogApp();
 });
 
 /**
@@ -276,54 +279,226 @@ function resetSearch() {
   renderAttachedFiles();
 }
 
-/**
- * Filtra las tarjetas del catálogo según la categoría seleccionada
- * @param {string} category - Categoría a filtrar ('todos', 'polimeros', 'metales', 'utillajes', 'prototipado')
- * @param {HTMLElement} btn - Botón presionado
- */
-function filterCatalog(category, btn) {
-  // Actualizar clase activa en botones de filtro
-  const buttons = document.querySelectorAll('.catalog-filters .filter-btn');
-  buttons.forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+// ========================================================
+// Lógica del Catálogo Dinámico de Productos 3D
+// ========================================================
 
-  // Filtrar tarjetas
-  const cards = document.querySelectorAll('.catalog-card');
-  cards.forEach(card => {
-    const cardCat = card.getAttribute('data-category');
-    if (category === 'todos' || cardCat === category) {
-      card.classList.remove('hidden');
-    } else {
-      card.classList.add('hidden');
-    }
-  });
+let activeCategory = 'todos';
+let searchQuery = '';
+let currentSort = 'featured';
+
+function initCatalogApp() {
+  const catalogGrid = document.getElementById('catalogGrid');
+  if (!catalogGrid || typeof window.PRODUCTS === 'undefined') return;
+
+  renderCategoryFilters();
+  renderCatalog();
 }
 
-/**
- * Selecciona un producto del catálogo y lo traslada a la barra de consulta
- * @param {string} itemName - Nombre del producto seleccionado
- */
-function selectCatalogItem(itemName) {
-  const input = document.getElementById('mindInput');
-  const searchBar = document.querySelector('.search-bar');
+function renderCategoryFilters() {
+  const container = document.getElementById('catalogFiltersContainer');
+  if (!container || !window.CATEGORIES) return;
 
-  if (input) {
-    input.value = `Quiero personalizar: ${itemName}`;
-    input.focus();
+  container.innerHTML = window.CATEGORIES.map(cat => {
+    const isActive = cat.id === activeCategory;
+    return `
+      <button 
+        type="button" 
+        class="filter-btn ${isActive ? 'active' : ''}" 
+        onclick="handleCatalogCategoryChange('${cat.id}', this)"
+      >
+        <span>${escapeHtml(cat.name)}</span>
+        <span class="filter-count-badge">${cat.count || 0}</span>
+      </button>
+    `;
+  }).join('');
+}
 
-    // Efecto visual de resaltado suave en la barra
-    if (searchBar) {
-      searchBar.style.borderColor = 'var(--accent-color)';
-      searchBar.style.boxShadow = 'var(--shadow-focused)';
-      setTimeout(() => {
-        searchBar.style.borderColor = '';
-        searchBar.style.boxShadow = '';
-      }, 1200);
+function handleCatalogCategoryChange(catId, btn) {
+  activeCategory = catId;
+
+  document.querySelectorAll('#catalogFiltersContainer .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  renderCatalog();
+}
+
+function handleCatalogSearch(val) {
+  searchQuery = (val || '').trim();
+  const clearBtn = document.getElementById('catalogSearchClear');
+  if (clearBtn) {
+    if (searchQuery.length > 0) {
+      clearBtn.classList.remove('hidden');
+    } else {
+      clearBtn.classList.add('hidden');
     }
   }
+  renderCatalog();
+}
 
-  // Desplazar suavemente a la barra de búsqueda
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function clearCatalogSearch() {
+  const input = document.getElementById('catalogSearchInput');
+  const clearBtn = document.getElementById('catalogSearchClear');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.classList.add('hidden');
+  searchQuery = '';
+  renderCatalog();
+}
+
+function handleCatalogSort(sortVal) {
+  currentSort = sortVal || 'featured';
+  renderCatalog();
+}
+
+function renderCatalog() {
+  const grid = document.getElementById('catalogGrid');
+  const countLabel = document.getElementById('catalogCountLabel');
+  if (!grid || !window.PRODUCTS) return;
+
+  // 1. Filtrar por categoría
+  let list = window.PRODUCTS;
+  if (activeCategory !== 'todos') {
+    list = list.filter(p => p.category === activeCategory);
+  }
+
+  // 2. Filtrar por búsqueda
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(p => 
+      p.name.toLowerCase().includes(q) ||
+      p.shortDesc.toLowerCase().includes(q) ||
+      p.categoryLabel.toLowerCase().includes(q) ||
+      p.tag.toLowerCase().includes(q) ||
+      (p.specs && p.specs.some(s => s.toLowerCase().includes(q)))
+    );
+  }
+
+  // 3. Ordenar
+  if (currentSort === 'price-asc') {
+    list = [...list].sort((a, b) => a.price - b.price);
+  } else if (currentSort === 'price-desc') {
+    list = [...list].sort((a, b) => b.price - a.price);
+  } else if (currentSort === 'name-asc') {
+    list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Actualizar contador
+  if (countLabel) {
+    countLabel.textContent = `Mostrando ${list.length} producto${list.length === 1 ? '' : 's'}${activeCategory !== 'todos' ? ` en ${activeCategory}` : ''}${searchQuery ? ` para "${searchQuery}"` : ''}`;
+  }
+
+  // Renderizar estado vacío si no hay resultados
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="catalog-empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <h3>No se encontraron productos</h3>
+        <p>No hay artículos que coincidan con "${escapeHtml(searchQuery)}". Intenta buscar con otros términos o cambia de categoría.</p>
+        <button type="button" class="catalog-btn-primary" onclick="clearCatalogSearch(); handleCatalogCategoryChange('todos', null);">Ver todos los productos</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Renderizar tarjetas de producto
+  grid.innerHTML = list.map(p => `
+    <article class="catalog-card" data-category="${p.category}">
+      
+      <div class="catalog-card-header">
+        <span class="catalog-tech-tag">${escapeHtml(p.tag)}</span>
+        <span class="catalog-cat-tag">${escapeHtml(p.categoryLabel)}</span>
+      </div>
+
+      <div class="catalog-card-body">
+        <div class="catalog-card-icon-wrap">
+          <div class="catalog-card-icon">
+            ${getProductIconSvg(p.icon)}
+          </div>
+          <span class="badge-3d-live">3D Live</span>
+        </div>
+
+        <h3 class="catalog-card-title">${escapeHtml(p.name)}</h3>
+        <p class="catalog-card-desc">${escapeHtml(p.shortDesc)}</p>
+
+        <div class="catalog-card-specs">
+          ${(p.specs || []).slice(0, 3).map(spec => `<span class="spec-badge">${escapeHtml(spec)}</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="catalog-card-pricing-block">
+        <div class="card-price-row">
+          <span class="card-price">${p.price.toFixed(2)} €</span>
+          <span class="card-tax">IVA incluido</span>
+        </div>
+      </div>
+
+      <div class="catalog-card-actions-grid">
+        <a href="producto.html?id=${p.id}" class="card-action-btn btn-view-page" title="Ver visualizador 3D interactivo y personalizar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Ver en 3D</span>
+        </a>
+
+        <button type="button" class="card-action-btn btn-quick-cart" onclick="quickAddToCart('${p.id}')" title="Añadir al carrito">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span>+ Carrito</span>
+        </button>
+
+        <button type="button" class="card-action-btn btn-quick-buy" onclick="quickDirectBuy('${p.id}')" title="Compra directa">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          <span>Comprar Ya</span>
+        </button>
+      </div>
+
+    </article>
+  `).join('');
+}
+
+// Iconos SVG para el catálogo
+function getProductIconSvg(iconName) {
+  const iconMap = {
+    'smartphone': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>',
+    'tablet': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>',
+    'headphones': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>',
+    'gamepad': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><rect x="2" y="6" width="20" height="12" rx="2"></rect></svg>',
+    'laptop': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>',
+    'tag': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>',
+    'music': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>',
+    'box': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
+    'life-buoy': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line></svg>',
+    'shield': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
+    'tool': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>',
+    'castle': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l3-3 3 3v14M19 21V7l-3-3-3 3v14M9 10h6"></path></svg>',
+    'user-check': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>',
+    'archive': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>',
+    'feather': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg>',
+    'cpu': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>',
+    'crosshair': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>',
+    'maximize-2': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>',
+    'cloud': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>',
+    'book': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+    'coffee': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>',
+    'pen-tool': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>',
+    'sun': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>',
+    'moon': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>',
+    'heart': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
+    'zap': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>',
+    'lock': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>'
+  };
+
+  return iconMap[iconName] || '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
 }
 
 /**
@@ -337,5 +512,5 @@ function escapeHtml(text) {
     '"': '&quot;',
     "'": '&#039;'
   };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return (text || '').toString().replace(/[&<>"']/g, m => map[m]);
 }
