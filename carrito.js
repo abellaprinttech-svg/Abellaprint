@@ -237,7 +237,15 @@ function injectCartDrawerDOM() {
         </div>
         <p class="cart-empty-text">Tu carrito está vacío.</p>
         <p class="cart-empty-sub">Explora nuestro catálogo y añade piezas únicas impresas en 3D.</p>
-        <button type="button" class="catalog-btn-primary" onclick="closeCartDrawer(); window.location.href='index.html#catalogSection';">Ver Catálogo</button>
+        <button type="button" class="catalog-btn-primary" onclick="closeCartDrawer(); window.location.href='index.html#catalogSection';">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Ver Catálogo</span>
+        </button>
       </div>
 
       <div id="cartDrawerItems" class="cart-drawer-items"></div>

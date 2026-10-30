@@ -2385,6 +2385,37 @@ html, body {
   max-width: 300px;
 }
 
+/* Botón Ver Catálogo para carrito vacío y páginas de catálogo */
+.catalog-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.75rem;
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: 0.925rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(194, 120, 53, 0.3);
+  margin-top: 0.5rem;
+}
+
+.catalog-btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(194, 120, 53, 0.45);
+  color: #ffffff;
+}
+
+.catalog-btn-primary:active {
+  transform: translateY(0);
+}
+
 /* Global Toast */
 .global-toast {
   position: fixed;
