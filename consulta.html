@@ -437,16 +437,18 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(10, 15, 20, 0.8);
+      background: rgba(10, 15, 20, 0.85);
       backdrop-filter: blur(6px);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       z-index: 100;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
       padding: 1.5rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-overlay.open {
@@ -465,6 +467,7 @@
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+      margin: auto;
     }
 
     .modal-head {
@@ -578,6 +581,257 @@
 
     .btn-primary:hover {
       background: var(--accent-hover);
+    }
+
+    /* Modal de Dimensiones para Impresión 3D */
+    .dimensions-modal-box {
+      max-width: 530px;
+      max-height: calc(100vh - 3.5rem);
+      overflow-y: auto;
+      padding: 1.75rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(194, 120, 53, 0.5) rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .dimensions-modal-box::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .dimensions-modal-box::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+    }
+
+    .dimensions-modal-box::-webkit-scrollbar-thumb {
+      background: rgba(194, 120, 53, 0.45);
+      border-radius: 8px;
+    }
+
+    .dimensions-modal-box::-webkit-scrollbar-thumb:hover {
+      background: rgba(194, 120, 53, 0.8);
+    }
+
+    .dimensions-modal-box .modal-head {
+      position: sticky;
+      top: -1.75rem;
+      background: #182029;
+      z-index: 10;
+      margin: -1.75rem -1.75rem 0 -1.75rem;
+      padding: 1.5rem 1.75rem 1rem 1.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .dimensions-modal-box .modal-actions {
+      position: sticky;
+      bottom: -1.75rem;
+      background: #182029;
+      z-index: 10;
+      margin: 0 -1.75rem -1.75rem -1.75rem;
+      padding: 1rem 1.75rem 1.5rem 1.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-subtitle-text {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin: -0.35rem 0 0.25rem 0;
+      line-height: 1.45;
+    }
+
+    .dim-presets-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .dim-preset-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dim-preset-chip:hover {
+      border-color: var(--accent-color);
+      color: #ffffff;
+      background: rgba(194, 120, 53, 0.1);
+    }
+
+    .dim-preset-chip.active {
+      background: rgba(194, 120, 53, 0.2);
+      border-color: var(--accent-color);
+      color: #c27835;
+      font-weight: 700;
+    }
+
+    .dim-inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .dim-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .dim-field-label {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 600;
+    }
+
+    .axis-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .axis-x { background: #ef4444; }
+    .axis-y { background: #10b981; }
+    .axis-z { background: #3b82f6; }
+
+    .dim-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .dim-num-input {
+      padding-right: 2.2rem;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .unit-suffix {
+      position: absolute;
+      right: 0.75rem;
+      color: #64748b;
+      font-size: 0.8rem;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .proportional-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      user-select: none;
+    }
+
+    .proportional-checkbox-label input {
+      accent-color: var(--accent-color);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .dim-options-row {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+
+    .dim-stepper {
+      display: flex;
+      align-items: center;
+      background: #0f141a;
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      overflow: hidden;
+      height: 42px;
+    }
+
+    .dim-stepper-btn {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      width: 38px;
+      height: 100%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dim-stepper-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .dim-stepper-val {
+      width: 100%;
+      background: transparent;
+      border: none;
+      text-align: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .dim-summary-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .summary-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .summary-stat-value {
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .summary-stat-row.total-highlight {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 0.5rem;
+      margin-top: 0.2rem;
+    }
+
+    .summary-stat-row.total-highlight .summary-stat-title {
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .summary-total-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent-color);
     }
 
     @media (max-width: 640px) {
@@ -757,13 +1011,13 @@
       </button>
 
       <!-- Acción: Añadir a presupuesto / Carrito de Abella Print Tech -->
-      <button type="button" class="action-cta-pill" onclick="addMeshyModelToCart()" title="Añadir a presupuesto de impresión 3D">
+      <button type="button" class="action-cta-pill" onclick="openDimensionsModal()" title="Elegir dimensiones e imprimir en 3D">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1"></circle>
           <circle cx="20" cy="21" r="1"></circle>
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
         </svg>
-        <span>Fabricar en 3D</span>
+        <span>Imprimir en 3D</span>
       </button>
     </div>
 
@@ -840,6 +1094,129 @@
       <div class="modal-actions">
         <button type="button" class="btn-secondary" onclick="closeNewPromptModal()">Cancelar</button>
         <button type="button" class="btn-primary" onclick="submitNewPromptFromModal()">Generar con Meshy AI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Pregunta de Dimensiones para Impresión 3D -->
+  <div class="modal-overlay" id="dimensionsModal">
+    <div class="modal-box dimensions-modal-box">
+      <div class="modal-head">
+        <h3 class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <span>¿De qué dimensiones lo quieres?</span>
+        </h3>
+        <button type="button" class="modal-close-btn" onclick="closeDimensionsModal()">&times;</button>
+      </div>
+
+      <p class="modal-subtitle-text">
+        Configura el tamaño para la fabricación 3D de tu objeto. Las medidas están expresadas en milímetros (mm).
+      </p>
+
+      <!-- Accesos Rápidos de Tamaño -->
+      <div class="modal-form-group">
+        <label class="modal-label">Tamaño rápido sugerido:</label>
+        <div class="dim-presets-chips">
+          <button type="button" class="dim-preset-chip" data-size="30" onclick="applyPresetSize(30)">Llavero (30 mm)</button>
+          <button type="button" class="dim-preset-chip" data-size="50" onclick="applyPresetSize(50)">Pequeño (50 mm)</button>
+          <button type="button" class="dim-preset-chip active" data-size="100" onclick="applyPresetSize(100)">Estándar (100 mm)</button>
+          <button type="button" class="dim-preset-chip" data-size="150" onclick="applyPresetSize(150)">Grande (150 mm)</button>
+          <button type="button" class="dim-preset-chip" data-size="200" onclick="applyPresetSize(200)">Máximo (200 mm)</button>
+        </div>
+      </div>
+
+      <!-- Inputs de Dimensiones X, Y, Z -->
+      <div class="modal-form-group">
+        <div class="dim-inputs-grid">
+          <div class="dim-field">
+            <label class="dim-field-label" for="dimXInput">
+              <span class="axis-pill axis-x">X</span> Ancho
+            </label>
+            <div class="dim-input-wrap">
+              <input type="number" id="dimXInput" class="modal-input dim-num-input" value="100" min="1" max="1000" step="any" oninput="onDimensionManualChange('x')" onchange="onDimensionManualChange('x')" onkeyup="onDimensionManualChange('x')">
+              <span class="unit-suffix">mm</span>
+            </div>
+          </div>
+
+          <div class="dim-field">
+            <label class="dim-field-label" for="dimYInput">
+              <span class="axis-pill axis-y">Y</span> Profundidad
+            </label>
+            <div class="dim-input-wrap">
+              <input type="number" id="dimYInput" class="modal-input dim-num-input" value="100" min="1" max="1000" step="any" oninput="onDimensionManualChange('y')" onchange="onDimensionManualChange('y')" onkeyup="onDimensionManualChange('y')">
+              <span class="unit-suffix">mm</span>
+            </div>
+          </div>
+
+          <div class="dim-field">
+            <label class="dim-field-label" for="dimZInput">
+              <span class="axis-pill axis-z">Z</span> Altura
+            </label>
+            <div class="dim-input-wrap">
+              <input type="number" id="dimZInput" class="modal-input dim-num-input" value="100" min="1" max="1000" step="any" oninput="onDimensionManualChange('z')" onchange="onDimensionManualChange('z')" onkeyup="onDimensionManualChange('z')">
+              <span class="unit-suffix">mm</span>
+            </div>
+          </div>
+        </div>
+
+        <label class="proportional-checkbox-label">
+          <input type="checkbox" id="proportionalLockCheck" checked onchange="onProportionalToggle()">
+          <span>Mantener proporción original del modelo (Escala uniforme)</span>
+        </label>
+      </div>
+
+      <!-- Material y Unidades -->
+      <div class="dim-options-row">
+        <div class="dim-option-col">
+          <label class="modal-label" for="dimMaterialSelect">Material de Impresión:</label>
+          <select id="dimMaterialSelect" class="modal-input" onchange="recalculateDimPrice()">
+            <option value="pla" data-extra="0" selected>PLA+ Premium (Bio-plástico resistente)</option>
+            <option value="petg" data-extra="3.50">PETG Industrial (+3.50 €)</option>
+            <option value="resina" data-extra="6.00">Resina 8K Ultra-Detalle (+6.00 €)</option>
+            <option value="tpu" data-extra="4.50">TPU Flexible (+4.50 €)</option>
+          </select>
+        </div>
+
+        <div class="dim-option-col dim-qty-col">
+          <label class="modal-label" for="dimUnitsInput">Unidades:</label>
+          <div class="dim-stepper">
+            <button type="button" class="dim-stepper-btn" onclick="adjustDimUnits(-1)">&minus;</button>
+            <input type="number" id="dimUnitsInput" class="dim-stepper-val" value="1" min="1" max="999" oninput="recalculateDimPrice()">
+            <button type="button" class="dim-stepper-btn" onclick="adjustDimUnits(1)">&plus;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen de Costes y Volumen -->
+      <div class="dim-summary-card">
+        <div class="summary-stat-row">
+          <span class="summary-stat-title">Volumen estimado:</span>
+          <strong id="dimVolumeDisplay" class="summary-stat-value">~0.0 cm³</strong>
+        </div>
+        <div class="summary-stat-row">
+          <span class="summary-stat-title">Precio estimado por unidad:</span>
+          <strong id="dimUnitPriceDisplay" class="summary-stat-value">0.00 €</strong>
+        </div>
+        <div class="summary-stat-row total-highlight">
+          <span class="summary-stat-title">Total estimado:</span>
+          <strong id="dimTotalPriceDisplay" class="summary-total-value">0.00 €</strong>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeDimensionsModal()">Cancelar</button>
+        <button type="button" class="btn-primary" onclick="confirmDimensionsAndAddToCart()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span>Confirmar y Añadir al Carrito</span>
+        </button>
       </div>
     </div>
   </div>

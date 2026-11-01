@@ -158,7 +158,8 @@ function renderCartDrawerContent() {
           <span>${escapeCartHtml(item.materialName || 'PLA+')}</span>
           <span>&bull;</span>
           <span>${escapeCartHtml(item.color || 'Negro')}</span>
-          ${item.customText ? `<span class="cart-item-custom-tag">Texto: "${escapeCartHtml(item.customText)}"</span>` : ''}
+          ${item.dimensions ? `<span class="cart-item-custom-tag">Medidas: ${escapeCartHtml(item.dimensions)}</span>` : ''}
+          ${item.customText && !item.dimensions ? `<span class="cart-item-custom-tag">Texto: "${escapeCartHtml(item.customText)}"</span>` : ''}
         </div>
         <div class="cart-item-pricing">
           <span class="cart-item-price">${formatCurrency(item.unitPrice)}</span>

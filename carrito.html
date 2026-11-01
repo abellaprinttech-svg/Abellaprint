@@ -412,7 +412,8 @@
               <div class="checkout-item-tags">
                 <span class="item-tag-material">${escapeCartHtml(item.materialName || 'PLA+')}</span>
                 <span class="item-tag-color">Color: ${escapeCartHtml(item.color || 'Negro')}</span>
-                ${item.customText ? `<span class="item-tag-custom">Texto: "${escapeCartHtml(item.customText)}"</span>` : ''}
+                ${item.dimensions ? `<span class="item-tag-custom">Medidas: ${escapeCartHtml(item.dimensions)}</span>` : ''}
+                ${item.customText && !item.dimensions ? `<span class="item-tag-custom">Texto: "${escapeCartHtml(item.customText)}"</span>` : ''}
               </div>
             </div>
             <div class="checkout-item-price-col">

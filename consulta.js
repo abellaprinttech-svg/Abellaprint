@@ -599,26 +599,299 @@ function downloadCurrentModel() {
   }
 }
 
-function addMeshyModelToCart() {
-  const promptName = currentPromptText || 'Diseño personalizado Meshy AI';
-  
-  if (typeof addToCart === 'function') {
-    addToCart({
-      productId: 'meshy_ai_' + Date.now(),
-      name: `Diseño personalizado (Meshy AI)`,
-      basePrice: 19.90,
-      unitPrice: 19.90,
-      color: 'Bronce Abella',
-      colorHex: '#c27835',
-      materialId: 'pla',
-      materialName: 'PLA+ Premium',
-      customText: promptName,
-      quantity: 1,
-      category: 'personalizado'
-    });
+// ========================================================
+// 4b. Modal de Dimensiones para Impresión 3D
+// ========================================================
+let dimBaseRatios = { x: 1, y: 1, z: 1 };
+let currentDimensions = { x: 100, y: 100, z: 100 };
+let currentCalculatedUnitPrice = 19.90;
+let currentCalculatedTotalPrice = 19.90;
+
+function openDimensionsModal() {
+  const modal = document.getElementById('dimensionsModal');
+  if (!modal) return;
+
+  // Medir el modelo 3D actual en la escena para calibrar proporciones
+  if (currentLoadedMesh) {
+    try {
+      const box = new THREE.Box3().setFromObject(currentLoadedMesh);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+
+      // En Three.js: X = ancho, Y = altura, Z = profundidad
+      const rawX = Math.max(0.1, size.x);
+      const rawY = Math.max(0.1, size.z); // Profundidad en plano horizontal
+      const rawZ = Math.max(0.1, size.y); // Altura vertical
+
+      const maxAxis = Math.max(rawX, rawY, rawZ) || 1;
+      dimBaseRatios = {
+        x: rawX / maxAxis,
+        y: rawY / maxAxis,
+        z: rawZ / maxAxis
+      };
+
+      // Escala por defecto a 100 mm para el eje mayor
+      currentDimensions = {
+        x: Math.max(10, Math.round(dimBaseRatios.x * 100)),
+        y: Math.max(10, Math.round(dimBaseRatios.y * 100)),
+        z: Math.max(10, Math.round(dimBaseRatios.z * 100))
+      };
+    } catch (e) {
+      console.warn('No se pudo medir la malla con Three.js', e);
+      dimBaseRatios = { x: 1, y: 1, z: 0.8 };
+      currentDimensions = { x: 100, y: 100, z: 80 };
+    }
   } else {
-    alert(`"${promptName}" añadido al presupuesto de fabricación.`);
+    dimBaseRatios = { x: 1, y: 0.8, z: 0.6 };
+    currentDimensions = { x: 100, y: 80, z: 60 };
   }
+
+  // Actualizar inputs del modal
+  const inputX = document.getElementById('dimXInput');
+  const inputY = document.getElementById('dimYInput');
+  const inputZ = document.getElementById('dimZInput');
+  if (inputX) inputX.value = currentDimensions.x;
+  if (inputY) inputY.value = currentDimensions.y;
+  if (inputZ) inputZ.value = currentDimensions.z;
+
+  // Restaurar chip activo (100 mm por defecto)
+  const chips = document.querySelectorAll('.dim-preset-chip');
+  chips.forEach(c => {
+    const size = parseInt(c.getAttribute('data-size'), 10);
+    c.classList.toggle('active', size === 100);
+  });
+
+  // Resetear unidades a 1
+  const unitsInput = document.getElementById('dimUnitsInput');
+  if (unitsInput) unitsInput.value = 1;
+
+  recalculateDimPrice();
+  modal.classList.add('open');
+}
+
+function closeDimensionsModal() {
+  const modal = document.getElementById('dimensionsModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function applyPresetSize(targetMax) {
+  currentDimensions.x = Math.max(10, Math.round(dimBaseRatios.x * targetMax));
+  currentDimensions.y = Math.max(10, Math.round(dimBaseRatios.y * targetMax));
+  currentDimensions.z = Math.max(10, Math.round(dimBaseRatios.z * targetMax));
+
+  const inputX = document.getElementById('dimXInput');
+  const inputY = document.getElementById('dimYInput');
+  const inputZ = document.getElementById('dimZInput');
+  if (inputX) inputX.value = currentDimensions.x;
+  if (inputY) inputY.value = currentDimensions.y;
+  if (inputZ) inputZ.value = currentDimensions.z;
+
+  const chips = document.querySelectorAll('.dim-preset-chip');
+  chips.forEach(c => {
+    const size = parseInt(c.getAttribute('data-size'), 10);
+    c.classList.toggle('active', size === targetMax);
+  });
+
+  recalculateDimPrice();
+}
+
+function onDimensionManualChange(axis) {
+  const inputX = document.getElementById('dimXInput');
+  const inputY = document.getElementById('dimYInput');
+  const inputZ = document.getElementById('dimZInput');
+  if (!inputX || !inputY || !inputZ) return;
+
+  const rawX = parseFloat(String(inputX.value).replace(',', '.'));
+  const rawY = parseFloat(String(inputY.value).replace(',', '.'));
+  const rawZ = parseFloat(String(inputZ.value).replace(',', '.'));
+
+  const valX = (!isNaN(rawX) && rawX > 0) ? rawX : currentDimensions.x;
+  const valY = (!isNaN(rawY) && rawY > 0) ? rawY : currentDimensions.y;
+  const valZ = (!isNaN(rawZ) && rawZ > 0) ? rawZ : currentDimensions.z;
+
+  const proportionalLock = document.getElementById('proportionalLockCheck');
+  const isProportional = proportionalLock ? proportionalLock.checked : true;
+
+  if (isProportional) {
+    if (axis === 'x') {
+      const scale = valX / Math.max(0.01, dimBaseRatios.x);
+      currentDimensions.x = Math.round(valX * 10) / 10;
+      currentDimensions.y = Math.max(1, Math.round(dimBaseRatios.y * scale * 10) / 10);
+      currentDimensions.z = Math.max(1, Math.round(dimBaseRatios.z * scale * 10) / 10);
+      inputY.value = currentDimensions.y;
+      inputZ.value = currentDimensions.z;
+    } else if (axis === 'y') {
+      const scale = valY / Math.max(0.01, dimBaseRatios.y);
+      currentDimensions.y = Math.round(valY * 10) / 10;
+      currentDimensions.x = Math.max(1, Math.round(dimBaseRatios.x * scale * 10) / 10);
+      currentDimensions.z = Math.max(1, Math.round(dimBaseRatios.z * scale * 10) / 10);
+      inputX.value = currentDimensions.x;
+      inputZ.value = currentDimensions.z;
+    } else if (axis === 'z') {
+      const scale = valZ / Math.max(0.01, dimBaseRatios.z);
+      currentDimensions.z = Math.round(valZ * 10) / 10;
+      currentDimensions.x = Math.max(1, Math.round(dimBaseRatios.x * scale * 10) / 10);
+      currentDimensions.y = Math.max(1, Math.round(dimBaseRatios.y * scale * 10) / 10);
+      inputX.value = currentDimensions.x;
+      inputY.value = currentDimensions.y;
+    }
+  } else {
+    // Escala libre manual por eje independiente
+    if (!isNaN(rawX) && rawX > 0) currentDimensions.x = rawX;
+    if (!isNaN(rawY) && rawY > 0) currentDimensions.y = rawY;
+    if (!isNaN(rawZ) && rawZ > 0) currentDimensions.z = rawZ;
+  }
+
+  // Desactivar chips de preset
+  document.querySelectorAll('.dim-preset-chip').forEach(c => c.classList.remove('active'));
+
+  recalculateDimPrice();
+}
+
+function onProportionalToggle() {
+  const lock = document.getElementById('proportionalLockCheck');
+  const inputX = document.getElementById('dimXInput');
+  const inputY = document.getElementById('dimYInput');
+  const inputZ = document.getElementById('dimZInput');
+
+  if (inputX && inputX.value) {
+    const px = parseFloat(String(inputX.value).replace(',', '.'));
+    if (!isNaN(px) && px > 0) currentDimensions.x = px;
+  }
+  if (inputY && inputY.value) {
+    const py = parseFloat(String(inputY.value).replace(',', '.'));
+    if (!isNaN(py) && py > 0) currentDimensions.y = py;
+  }
+  if (inputZ && inputZ.value) {
+    const pz = parseFloat(String(inputZ.value).replace(',', '.'));
+    if (!isNaN(pz) && pz > 0) currentDimensions.z = pz;
+  }
+
+  if (lock && lock.checked) {
+    const maxAxis = Math.max(currentDimensions.x, currentDimensions.y, currentDimensions.z) || 1;
+    dimBaseRatios = {
+      x: currentDimensions.x / maxAxis,
+      y: currentDimensions.y / maxAxis,
+      z: currentDimensions.z / maxAxis
+    };
+  }
+
+  recalculateDimPrice();
+}
+
+function adjustDimUnits(delta) {
+  const input = document.getElementById('dimUnitsInput');
+  if (!input) return;
+  let val = parseInt(input.value, 10) || 1;
+  val = Math.max(1, Math.min(999, val + delta));
+  input.value = val;
+  recalculateDimPrice();
+}
+
+function recalculateDimPrice() {
+  const inputX = document.getElementById('dimXInput');
+  const inputY = document.getElementById('dimYInput');
+  const inputZ = document.getElementById('dimZInput');
+
+  let x = inputX && inputX.value ? parseFloat(String(inputX.value).replace(',', '.')) : currentDimensions.x;
+  let y = inputY && inputY.value ? parseFloat(String(inputY.value).replace(',', '.')) : currentDimensions.y;
+  let z = inputZ && inputZ.value ? parseFloat(String(inputZ.value).replace(',', '.')) : currentDimensions.z;
+
+  if (isNaN(x) || x <= 0) x = currentDimensions.x || 10;
+  if (isNaN(y) || y <= 0) y = currentDimensions.y || 10;
+  if (isNaN(z) || z <= 0) z = currentDimensions.z || 10;
+
+  currentDimensions.x = x;
+  currentDimensions.y = y;
+  currentDimensions.z = z;
+
+  // Volumen estimado en cm3 (considerando ~22% infill y paredes)
+  const volCm3 = Math.max(0.1, (x * y * z * 0.22) / 1000);
+
+  // Material extra
+  const matSelect = document.getElementById('dimMaterialSelect');
+  let extraMaterial = 0;
+  if (matSelect && matSelect.selectedIndex >= 0) {
+    extraMaterial = parseFloat(matSelect.options[matSelect.selectedIndex].getAttribute('data-extra')) || 0;
+  }
+
+  // Coste base de preparación de máquina + material
+  const basePrep = 3.50;
+  const materialRate = 0.22; // € / cm3
+  let unitPrice = basePrep + (volCm3 * materialRate) + extraMaterial;
+  unitPrice = Math.max(4.90, Math.round(unitPrice * 10) / 10);
+
+  const unitsInput = document.getElementById('dimUnitsInput');
+  let units = unitsInput ? (parseInt(unitsInput.value, 10) || 1) : 1;
+  if (units < 1) units = 1;
+
+  // Descuento por volumen
+  let discount = 0;
+  if (units >= 25) discount = 0.15;
+  else if (units >= 10) discount = 0.10;
+  else if (units >= 5) discount = 0.05;
+
+  const subtotal = unitPrice * units;
+  const total = subtotal * (1 - discount);
+
+  currentCalculatedUnitPrice = unitPrice;
+  currentCalculatedTotalPrice = total;
+
+  const volEl = document.getElementById('dimVolumeDisplay');
+  const unitEl = document.getElementById('dimUnitPriceDisplay');
+  const totalEl = document.getElementById('dimTotalPriceDisplay');
+
+  if (volEl) volEl.textContent = `~${volCm3.toFixed(1)} cm³`;
+  if (unitEl) unitEl.textContent = `${unitPrice.toFixed(2)} €`;
+  if (totalEl) totalEl.textContent = `${total.toFixed(2)} €`;
+}
+
+function confirmDimensionsAndAddToCart() {
+  const promptName = currentPromptText || 'Diseño generado con Meshy AI';
+  const unitsInput = document.getElementById('dimUnitsInput');
+  const units = unitsInput ? (parseInt(unitsInput.value, 10) || 1) : 1;
+
+  const matSelect = document.getElementById('dimMaterialSelect');
+  const materialId = matSelect ? matSelect.value : 'pla';
+  const materialName = matSelect && matSelect.selectedIndex >= 0
+    ? matSelect.options[matSelect.selectedIndex].text.split('(')[0].trim()
+    : 'PLA+ Premium';
+
+  const dimX = currentDimensions.x;
+  const dimY = currentDimensions.y;
+  const dimZ = currentDimensions.z;
+  const dimStr = `${dimX} × ${dimY} × ${dimZ} mm`;
+
+  const itemData = {
+    productId: 'ia_3d_' + Date.now(),
+    name: `Objeto 3D IA (${dimStr})`,
+    basePrice: currentCalculatedUnitPrice,
+    unitPrice: currentCalculatedUnitPrice,
+    color: 'Bronce Abella',
+    colorHex: '#c27835',
+    materialId: materialId,
+    materialName: materialName,
+    dimensions: dimStr,
+    customText: `Medidas: ${dimStr} • Prompt: "${promptName}"`,
+    quantity: units,
+    category: 'personalizado'
+  };
+
+  if (typeof addToCart === 'function') {
+    addToCart(itemData);
+    closeDimensionsModal();
+    if (typeof openCartDrawer === 'function') {
+      openCartDrawer();
+    }
+  } else {
+    alert(`"${itemData.name}" añadido al carrito.`);
+    closeDimensionsModal();
+  }
+}
+
+// Redireccionar llamada original a la nueva experiencia
+function addMeshyModelToCart() {
+  openDimensionsModal();
 }
 
 // UI: Tarjeta de Estado

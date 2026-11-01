@@ -281,6 +281,9 @@ function renderCategoryFilters() {
 
   container.innerHTML = window.CATEGORIES.map(cat => {
     const isActive = cat.id === activeCategory;
+    const count = cat.id === 'todos'
+      ? (window.PRODUCTS ? window.PRODUCTS.length : 0)
+      : (window.PRODUCTS ? window.PRODUCTS.filter(p => p.category === cat.id).length : 0);
     return `
       <button 
         type="button" 
@@ -288,7 +291,7 @@ function renderCategoryFilters() {
         onclick="handleCatalogCategoryChange('${cat.id}', this)"
       >
         <span>${escapeHtml(cat.name)}</span>
-        <span class="filter-count-badge">${cat.count || 0}</span>
+        <span class="filter-count-badge">${count}</span>
       </button>
     `;
   }).join('');
@@ -364,22 +367,40 @@ function renderCatalog() {
 
   // Actualizar contador
   if (countLabel) {
-    countLabel.textContent = `Mostrando ${list.length} producto${list.length === 1 ? '' : 's'}${activeCategory !== 'todos' ? ` en ${activeCategory}` : ''}${searchQuery ? ` para "${searchQuery}"` : ''}`;
+    if (window.PRODUCTS.length === 0) {
+      countLabel.textContent = 'Catálogo preparado (0 productos)';
+    } else {
+      countLabel.textContent = `Mostrando ${list.length} producto${list.length === 1 ? '' : 's'}${activeCategory !== 'todos' ? ` en ${activeCategory}` : ''}${searchQuery ? ` para "${searchQuery}"` : ''}`;
+    }
   }
 
   // Renderizar estado vacío si no hay resultados
   if (list.length === 0) {
-    grid.innerHTML = `
-      <div class="catalog-empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <h3>No se encontraron productos</h3>
-        <p>No hay artículos que coincidan con "${escapeHtml(searchQuery)}". Intenta buscar con otros términos o cambia de categoría.</p>
-        <button type="button" class="catalog-btn-primary" onclick="clearCatalogSearch(); handleCatalogCategoryChange('todos', null);">Ver todos los productos</button>
-      </div>
-    `;
+    if (window.PRODUCTS.length === 0) {
+      grid.innerHTML = `
+        <div class="catalog-empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <h3>Catálogo listo para tus productos</h3>
+          <p>Actualmente no hay productos en la tienda. Toda la interfaz, buscador, filtros y visualizador 3D están listos para cuando añadas tus productos en <code>products.js</code>.</p>
+        </div>
+      `;
+    } else {
+      grid.innerHTML = `
+        <div class="catalog-empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <h3>No se encontraron productos</h3>
+          <p>No hay artículos que coincidan con "${escapeHtml(searchQuery)}". Intenta buscar con otros términos o cambia de categoría.</p>
+          <button type="button" class="catalog-btn-primary" onclick="clearCatalogSearch(); handleCatalogCategoryChange('todos', null);">Ver todos los productos</button>
+        </div>
+      `;
+    }
     return;
   }
 

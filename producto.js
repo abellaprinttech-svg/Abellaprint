@@ -514,6 +514,7 @@ function animateViewer() {
 
 // Renderizar sección de productos relacionados
 function renderRelatedProducts() {
+  const section = document.querySelector('.related-products-section');
   const grid = document.getElementById('relatedProductsGrid');
   if (!grid || !window.PRODUCTS || !currentProduct) return;
 
@@ -521,6 +522,12 @@ function renderRelatedProducts() {
   const fallback = sameCategory.length < 4 
     ? [...sameCategory, ...window.PRODUCTS.filter(p => p.id !== currentProduct.id && !sameCategory.includes(p))].slice(0, 4)
     : sameCategory;
+
+  if (fallback.length === 0) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+  if (section) section.style.display = '';
 
   grid.innerHTML = fallback.map(p => `
     <div class="related-card">
